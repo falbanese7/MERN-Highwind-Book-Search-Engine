@@ -1,4 +1,4 @@
-import { useMutation } from '@apollo/client';
+/* eslint-disable no-unused-vars */
 import {
   Jumbotron,
   Container,
@@ -6,17 +6,20 @@ import {
   Card,
   Button,
 } from 'react-bootstrap';
-import { GET_ME } from '../utils/queries';
 import Auth from '../utils/auth';
 import { removeBookId } from '../utils/localStorage';
-import { useQuery } from '@apollo/client';
+import { useQuery, useMutation } from '@apollo/client';
+import { GET_ME } from '../utils/queries';
 import { REMOVE_BOOK } from '../utils/mutations';
 
 const SavedBooks = () => {
   const { loading, data } = useQuery(GET_ME);
-  const userData = data?.me || [];
+  const [removeBook, { error }] = useMutation(REMOVE_BOOK);
 
-  const [removeBook] = useMutation(REMOVE_BOOK);
+  const userData = data?.me || {};
+
+  // use this to determine if `useEffect()` hook needs to run again
+  const userDataLength = Object.keys(userData).length;
 
   // create function that accepts the book's mongo _id value as param and deletes the book from the database
   const handleDeleteBook = async (bookId) => {
@@ -25,16 +28,12 @@ const SavedBooks = () => {
     if (!token) {
       return false;
     }
+
     try {
-      const response = await removeBook({
-        variables: { bookId: bookId },
+      await removeBook({
+        variables: { bookId },
       });
 
-      if (!response) {
-        throw new Error('Something went wrong.');
-      }
-
-      // upon success, remove book's id from localStorage
       removeBookId(bookId);
     } catch (err) {
       console.error(err);
@@ -42,7 +41,7 @@ const SavedBooks = () => {
   };
 
   // if data isn't here yet, say so
-  if (loading) {
+  if (!userDataLength) {
     return <h2>LOADING...</h2>;
   }
 
